@@ -85,7 +85,7 @@ $(DST_DIR):
 	mkdir -p $@
 
 ifeq ($(CONTAINER),1) # inside the container
-ARCHS := i386-unix x86_64-unix i386-windows x86_64-windows
+ARCHS := x86_64-unix i386-unix x86_64-windows i386-windows
 
 HOST_ARCH := $(shell uname -m)
 unix_ARCHS = $(subst -unix,,$(filter %-unix,$(ARCHS)))
