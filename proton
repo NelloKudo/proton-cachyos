@@ -1645,6 +1645,8 @@ class Session:
 
         if "prefersdl" in self.compat_config:
             self.env["PROTON_DISABLE_HIDRAW"] = "1"
+            if "SDL_GAMECONTROLLER_IGNORE_DEVICES" in self.env:
+                del self.env["SDL_GAMECONTROLLER_IGNORE_DEVICES"]
 
         if "noxim" not in self.compat_config:
             self.env.pop("WINE_ALLOW_XIM")
