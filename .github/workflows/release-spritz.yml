@@ -17,10 +17,10 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: spritz-proton-${{ github.ref_name }}-x86_64
+          - name: proton-${{ github.ref_name }}-x86_64
             cpu_arch: nocona
             cpu_tune: core-avx2
-          - name: spritz-proton-${{ github.ref_name }}-x86_64_v3
+          - name: proton-${{ github.ref_name }}-x86_64_v3
             cpu_arch: core-avx2
             cpu_tune: core-avx2
     uses: ./.github/workflows/_job_build.yml
@@ -64,8 +64,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: spritz-proton-${{ github.ref_name }}-x86_64
-          - name: spritz-proton-${{ github.ref_name }}-x86_64_v3
+          - name: proton-${{ github.ref_name }}-x86_64
+          - name: proton-${{ github.ref_name }}-x86_64_v3
     uses: ./.github/workflows/_job_upload.yml
     with:
       version: ${{ github.ref_name }}
