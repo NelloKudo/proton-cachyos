@@ -5,7 +5,7 @@ on:
     types: [ published ]
   push:
     tags:
-      - 'cachyos-*-*-slr'
+      - 'spritz*'
 
 concurrency:
   group: ${{ github.ref_name }}
@@ -42,8 +42,7 @@ jobs:
       id: title
       shell: bash
       run: |
-        git fetch origin +refs/tags/*:refs/tags/*
-        python -c "_,mj,mn,_='${{ github.ref_name }}'.split('-');print('title='+'-'.join([mj,mn]))" >> "$GITHUB_OUTPUT"
+        echo "title=Release ${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
     - name: Create
       id: create
       shell: bash
