@@ -1,3 +1,9 @@
+Spritz-Proton
+------------
+Fork of Proton-CachyOS aimed at building custom Spritz-Proton builds with patches from [WineSpritz](https://github.com/NelloKudo/WineSpritz/tree/proton)
+
+Main branch gets a lot of hard resets/force pushes, please refer at [tags](https://github.com/NelloKudo/proton-cachyos/tags) for each version's source.
+
 Introduction
 ------------
 
