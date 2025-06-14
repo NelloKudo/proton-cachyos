@@ -5,7 +5,7 @@ on:
     types: [ published ]
   push:
     tags:
-      - 'spritz-cachyos-*-*-slr'
+      - 'spritz*'
 
 concurrency:
   group: ${{ github.ref_name }}
