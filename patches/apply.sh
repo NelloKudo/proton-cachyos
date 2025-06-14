@@ -20,3 +20,8 @@ popd || exit 1
 pushd "$here"/../vkd3d-proton || exit 1
     patch_cmd "$here"/vkd3d-proton/vkd3d-proton-0001-vkd3d-Load-amdxc64-when-using-AMD.patch
 popd || exit 1
+
+pushd "$here"/../wine || exit 1
+    patch_cmd "$here"/spritz/0001-HACK-ws2_32-Block-GI-ZZZ-from-connecting-on-first-re.patch
+    patch_cmd "$here"/spritz/0002-HACK-kernelbase-Terminate-Genshin-Impact-if-ExitProc.patch
+popd || exit 1
