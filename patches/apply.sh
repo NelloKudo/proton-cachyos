@@ -24,4 +24,7 @@ popd || exit 1
 pushd "$here"/../wine || exit 1
     patch_cmd "$here"/spritz/0001-HACK-ws2_32-Block-GI-ZZZ-from-connecting-on-first-re.patch
     patch_cmd "$here"/spritz/0002-HACK-kernelbase-Terminate-Genshin-Impact-if-ExitProc.patch
+    patch_cmd "$here"/spritz/backports/0001-backports-7579.patch
+    patch_cmd "$here"/spritz/backports/0002-backports-ntdll-Also-trap-syscalls-in-the-top-down-reserved-ar.patch
+    patch_cmd "$here"/spritz/backports/0003-backports-8324.patch
 popd || exit 1
