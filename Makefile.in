@@ -1393,7 +1393,7 @@ all-dist: $(OVR_i386_DIST) $(OVR_x86_64_DIST)
 ##
 
 default_pfx: wine gst_good gst_bad gst_libav gst_plugins_rs lsteamclient steamexe vrclient wineopenxr dxvk dxvk-nvapi vkd3d-proton
-	find $(DST_LIBDIR)/wine -type f -execdir chmod a-w '{}' '+'
+	find $(DST_LIBDIR)/wine -type f -execdir chmod go-w '{}' '+'
 	rm -rf $(abspath $(DIST_PREFIX))
 	python3 $(SRCDIR)/default_pfx.py $(abspath $(DIST_PREFIX)) $(abspath $(DST_DIR))
 
