@@ -25,8 +25,3 @@ popd || exit 1
 pushd "$here"/../protonfixes || exit 1
     patch_cmd "$here"/protonfixes/protonfixes-0001-gamefixes-replace-vcrun2019-with-vcrun2022-to-avoid-.patch
 popd || exit 1
-
-pushd "$here"/../wine || exit 1
-    patch_cmd "$here"/spritz/0001-HACK-ws2_32-Block-GI-ZZZ-from-connecting-on-first-re.patch
-    patch_cmd "$here"/spritz/0002-HACK-kernelbase-Terminate-Genshin-Impact-if-ExitProc.patch
-popd || exit 1
