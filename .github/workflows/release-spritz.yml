@@ -20,14 +20,26 @@ jobs:
           - name: proton-${{ github.ref_name }}-x86_64
             cpu_arch: nocona
             cpu_tune: core-avx2
+            build_ntsync: false
           - name: proton-${{ github.ref_name }}-x86_64_v3
             cpu_arch: core-avx2
             cpu_tune: core-avx2
+            build_ntsync: false
+          - name: proton-ntsync-${{ github.ref_name }}-x86_64
+            cpu_arch: nocona
+            cpu_tune: core-avx2
+            build_ntsync: true
+          - name: proton-ntsync-${{ github.ref_name }}-x86_64_v3
+            cpu_arch: core-avx2
+            cpu_tune: core-avx2
+            build_ntsync: true
+
     uses: ./.github/workflows/_job_build.yml
     with:
       name: ${{ matrix.name }}
       cpu_arch: ${{ matrix.cpu_arch }}
       cpu_tune: ${{ matrix.cpu_tune }}
+      build_ntsync: ${{ matrix.build_ntsync }}
 
   release:
     name: Release
@@ -65,6 +77,8 @@ jobs:
         include:
           - name: proton-${{ github.ref_name }}-x86_64
           - name: proton-${{ github.ref_name }}-x86_64_v3
+          - name: proton-ntsync-${{ github.ref_name }}-x86_64
+          - name: proton-ntsync-${{ github.ref_name }}-x86_64_v3
     uses: ./.github/workflows/_job_upload.yml
     with:
       version: ${{ github.ref_name }}

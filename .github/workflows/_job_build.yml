@@ -12,6 +12,9 @@ on:
       cpu_tune:
         required: true
         type: string
+      build_ntsync:
+        required: true
+        type: boolean
 
 jobs:
   proton:
@@ -42,6 +45,11 @@ jobs:
         git submodule update --init --filter=tree:0 --recursive
         ./patches/apply.sh
         mkdir ./build
+
+    - name: NTSync Patch
+      if: ${{ inputs.build_ntsync }}
+      run: |
+        ./patches/apply-ntsync.sh
 
     - name: Configure
       working-directory: ./build

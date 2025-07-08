@@ -1,0 +1,87 @@
+From a1a8becb58cf1ea6711b8e48456e3bd2396a663c Mon Sep 17 00:00:00 2001
+From: Peter Jung <admin@ptr1337.dev>
+Date: Sun, 21 Apr 2024 09:40:42 +0200
+Subject: [PATCH 1/2] proton: Disable ntsync by default, enable using
+ `PROTON_USE_NTSYNC=1`
+
+---
+ proton | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/proton b/proton
+index 101e260b..572654a1 100755
+--- a/proton
++++ b/proton
+@@ -1446,6 +1446,10 @@ class Session:
+         elif appid in default_cpu_limit:
+             self.env["WINE_CPU_TOPOLOGY"] = str(default_cpu_limit[appid])
+ 
++        #turn off fastsync by default unless it is enabled via env
++        if not "ntsync" in self.compat_config:
++            self.compat_config.add("nontsync")
++
+     def init_wine(self):
+         if "HOST_LC_ALL" in self.env and len(self.env["HOST_LC_ALL"]) > 0:
+             #steam sets LC_ALL=C to help some games, but Wine requires the real value
+@@ -1579,6 +1583,7 @@ class Session:
+         self.check_environment("PROTON_NO_D3D10", "nod3d10")
+         self.check_environment("PROTON_NO_ESYNC", "noesync")
+         self.check_environment("PROTON_NO_FSYNC", "nofsync")
++        self.check_environment("PROTON_USE_NTSYNC", "ntsync")
+         self.check_environment("PROTON_FORCE_LARGE_ADDRESS_AWARE", "forcelgadd")
+         self.check_environment("PROTON_OLD_GL_STRING", "oldglstr")
+         self.check_environment("PROTON_HIDE_NVIDIA_GPU", "hidenvgpu")
+@@ -1606,6 +1611,12 @@ class Session:
+         else:
+             self.env["WINEFSYNC"] = "1"
+ 
++        if "ntsync" in self.compat_config:
++            self.env.pop("WINE_DISABLE_FAST_SYNC", "")
++        else:
++            if "nontsync" in self.compat_config:
++                self.env["WINE_DISABLE_FAST_SYNC"] = "1"
++
+         if "oldglstr" in self.compat_config:
+             #mesa override
+             self.env["MESA_EXTENSION_MAX_YEAR"] = "2003"
+-- 
+2.50.0
+
+
+From 1c16895ba7703252731f7f2f3bcc95ec6a0bf5c6 Mon Sep 17 00:00:00 2001
+From: Stelios Tsampas <loathingkernel@gmail.com>
+Date: Wed, 19 Mar 2025 10:37:42 +0200
+Subject: [PATCH 2/2] proton: simplify ntsync enablement
+
+---
+ proton | 7 +------
+ 1 file changed, 1 insertion(+), 6 deletions(-)
+
+diff --git a/proton b/proton
+index 572654a1..b56d4552 100755
+--- a/proton
++++ b/proton
+@@ -1446,10 +1446,6 @@ class Session:
+         elif appid in default_cpu_limit:
+             self.env["WINE_CPU_TOPOLOGY"] = str(default_cpu_limit[appid])
+ 
+-        #turn off fastsync by default unless it is enabled via env
+-        if not "ntsync" in self.compat_config:
+-            self.compat_config.add("nontsync")
+-
+     def init_wine(self):
+         if "HOST_LC_ALL" in self.env and len(self.env["HOST_LC_ALL"]) > 0:
+             #steam sets LC_ALL=C to help some games, but Wine requires the real value
+@@ -1614,8 +1610,7 @@ class Session:
+         if "ntsync" in self.compat_config:
+             self.env.pop("WINE_DISABLE_FAST_SYNC", "")
+         else:
+-            if "nontsync" in self.compat_config:
+-                self.env["WINE_DISABLE_FAST_SYNC"] = "1"
++            self.env["WINE_DISABLE_FAST_SYNC"] = "1"
+ 
+         if "oldglstr" in self.compat_config:
+             #mesa override
+-- 
+2.50.0
+
