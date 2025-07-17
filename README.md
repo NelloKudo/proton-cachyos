@@ -1,3 +1,31 @@
+Spritz-Proton
+------------
+Fork of Proton-CachyOS aimed at building custom Spritz-Proton builds with patches from [Spritz-Wine](https://github.com/NelloKudo/Wine-Builds/tree/master/patches/0003-spritz) and **NTsync** enabled by default!
+
+New environmental variables: 
+- `PROTON_NO_NTSYNC=1`: disables NTsync, fallbacks to fsync
+- `WINE_USE_TAKE_FOCUS=1`: enables a fix for Unity games dropping inputs
+- `WINE_DISABLE_DISCONNECT=1`: disable the disconnecting trick enabled by default for certain games
+- `WINE_ENABLE_DISCONNECT=1`: enable the disconnecting trick for any game
+
+Recommended to use for gacha games like GI:
+- `UMU_USE_STEAM=1`: allows launching games from steam.exe even outside Steam
+
+Main branch gets a lot of hard resets/force pushes, please refer at [tags](https://github.com/NelloKudo/proton-cachyos/tags) for each version's source.
+
+Building locally
+------------
+To build your own **Spritz-Proton** (make sure you have Docker setup):
+```
+git clone --recurse-submodules https://github.com/NelloKudo/proton-cachyos.git
+cd proton-cachyos
+./patches/apply.sh
+mkdir build && cd build
+../configure.sh --build-name=spritz-proton-local --container-engine=docker --enable-ccache
+make -j$(nproc) redist
+```
+You can also add your own patches by just editing `apply.sh` and following its structure.
+
 Introduction
 ------------
 
