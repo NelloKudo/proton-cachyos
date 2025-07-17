@@ -2,7 +2,9 @@ Spritz-Proton
 ------------
 Fork of Proton-CachyOS aimed at building custom Spritz-Proton builds with patches from [WineSpritz](https://github.com/NelloKudo/WineSpritz/tree/proton) and **NTsync**!
 
-Note: NTsync is disabled by default, enable it using `PROTON_USE_NTSYNC=1`
+Notes: 
+- NTsync is disabled by default, enable it using `PROTON_USE_NTSYNC=1`
+- Added a fix for Unity games dropping inputs, enable it using `WINE_USE_TAKE_FOCUS=1`
 
 Main branch gets a lot of hard resets/force pushes, please refer at [tags](https://github.com/NelloKudo/proton-cachyos/tags) for each version's source.
 
