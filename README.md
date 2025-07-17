@@ -1,3 +1,24 @@
+Spritz-Proton
+------------
+Fork of Proton-CachyOS aimed at building custom Spritz-Proton builds with patches from [WineSpritz](https://github.com/NelloKudo/WineSpritz/tree/proton) and **NTsync**!
+
+Note: NTsync is disabled by default, enable it using `PROTON_USE_NTSYNC=1`
+
+Main branch gets a lot of hard resets/force pushes, please refer at [tags](https://github.com/NelloKudo/proton-cachyos/tags) for each version's source.
+
+Building locally
+------------
+To build your own **Spritz-Proton** (make sure you have Docker setup):
+```
+git clone --recurse-submodules https://github.com/NelloKudo/proton-cachyos.git
+cd proton-cachyos
+./patches/apply.sh
+mkdir ../build && cd ../build
+../configure.sh --build-name=spritz-proton-local --container-engine=docker
+make -j$(nproc) redist
+```
+You can also add your own patches by just editing `apply.sh` and following its structure.
+
 Introduction
 ------------
 
