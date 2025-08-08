@@ -1166,6 +1166,67 @@ class CompatData:
                     if file_exists(nvapi32_dll + '.debug', follow_symlinks=False):
                         os.unlink(nvapi32_dll + '.debug')
 
+                use_nvoptix = "nvoptix" in g_session.compat_config and "wow64" not in g_session.compat_config
+                use_nvml = ("nvml" in g_session.compat_config and "wow64" not in g_session.compat_config) or use_nvoptix
+                use_nvenc = "nvenc" in g_session.compat_config and "wow64" not in g_session.compat_config
+                use_nvcuda = "nvcuda" in g_session.compat_config and "wow64" not in g_session.compat_config
+
+                if use_nvcuda and use_nvapi:
+                    try_copy(g_proton.lib_dir + "wine/nvidia-libs/nvcuda/x86_64-windows/nvcuda.dll.so", "drive_c/windows/system32/nvcuda.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    try_copy(g_proton.lib_dir + "wine/nvidia-libs/nvcuda/i386-windows/nvcuda.dll.so", "drive_c/windows/syswow64/nvcuda.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    g_session.dlloverrides["nvcuda"] = "n,b"
+                else:
+                    nvcuda64_dll = self.prefix_dir + "drive_c/windows/system32/nvcuda.dll"
+                    nvcuda32_dll = self.prefix_dir + "drive_c/windows/syswow64/nvcuda.dll"
+                    if file_exists(nvcuda64_dll, follow_symlinks=False):
+                        os.unlink(nvcuda64_dll)
+                    if file_exists(nvcuda32_dll, follow_symlinks=False):
+                        os.unlink(nvcuda32_dll)
+
+                if use_nvenc and use_nvapi:
+                    try_copy(g_proton.lib_dir + "wine/nvidia-libs/nvenc/x86_64-windows/nvcuvid.dll.so", "drive_c/windows/system32/nvcuvid.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    try_copy(g_proton.lib_dir + "wine/nvidia-libs/nvenc/i386-windows/nvcuvid.dll.so", "drive_c/windows/syswow64/nvcuvid.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    try_copy(g_proton.lib_dir + "wine/nvidia-libs/nvenc/x86_64-windows/nvencodeapi64.dll.so", "drive_c/windows/system32/nvencodeapi64.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    try_copy(g_proton.lib_dir + "wine/nvidia-libs/nvenc/i386-windows/nvencodeapi.dll.so", "drive_c/windows/syswow64/nvencodeapi.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    g_session.dlloverrides["nvcuvid"] = "n,b"
+                    g_session.dlloverrides["nvencodeapi64"] = "n,b"
+                    g_session.dlloverrides["nvencodeapi"] = "n,b"
+                else:
+                    nvcuvid64_dll = self.prefix_dir + "drive_c/windows/system32/nvcuvid.dll"
+                    nvcuvid32_dll = self.prefix_dir + "drive_c/windows/syswow64/nvcuvid.dll"
+                    nvencodeapi64_dll = self.prefix_dir + "drive_c/windows/system32/nvencodeapi64.dll"
+                    nvencodeapi_dll = self.prefix_dir + "drive_c/windows/syswow64/nvencodeapi.dll"
+                    if file_exists(nvcuvid64_dll, follow_symlinks=False):
+                        os.unlink(nvcuvid64_dll)
+                    if file_exists(nvcuvid32_dll, follow_symlinks=False):
+                        os.unlink(nvcuvid32_dll)
+                    if file_exists(nvencodeapi64_dll, follow_symlinks=False):
+                        os.unlink(nvencodeapi64_dll)
+                    if file_exists(nvencodeapi_dll, follow_symlinks=False):
+                        os.unlink(nvencodeapi_dll)
+
+                if use_nvml and use_nvapi:
+                    g_session.env["WINEDLLPATH"] = ":".join(
+                        [g_proton.lib_dir + "wine/nvidia-libs/nvml/wine", g_proton.lib_dir + "vkd3d", g_proton.lib_dir + "wine"]
+                    )
+                    # https://github.com/SveSop/wine-nvml/tree/f9d458c18ac40f73642765977fba8667518387b7?tab=readme-ov-file#note-on-32-bit
+                    # g_session.env["WINE_NVML_ALLOW_32BIT"] = 0
+
+                if use_nvoptix and use_nvapi:
+                    try_copy(g_proton.lib_dir + "wine/nvidia-libs/nvoptix/x86_64-windows/nvoptix.dll.so", "drive_c/windows/system32/nvoptix.dll",
+                            prefix=self.prefix_dir, track_file=tracked_files, link_debug=True)
+                    g_session.dlloverrides["nvoptix"] = "n,b"
+                else:
+                    nvoptix64_dll = self.prefix_dir + "drive_c/windows/system32/nvoptix.dll"
+                    if file_exists(nvoptix64_dll, follow_symlinks=False):
+                        os.unlink(nvoptix64_dll)
+
                 # Try to detect known DLLs that ship with the NVIDIA Linux Driver
                 # and add them into the prefix
                 if g_session.nvidia_wine_dll_dir:
@@ -1636,6 +1697,11 @@ class Session:
         self.check_environment("PROTON_HEAP_ZERO_MEMORY", "heapzeromemory")
         self.check_environment("PROTON_DISABLE_NVAPI", "disablenvapi")
         self.check_environment("PROTON_FORCE_NVAPI", "forcenvapi")
+        self.check_environment("PROTON_NVIDIA_LIBS", "nvidialibs")
+        self.check_environment("PROTON_NVIDIA_NVCUDA", "nvcuda")
+        self.check_environment("PROTON_NVIDIA_NVENC", "nvenc")
+        self.check_environment("PROTON_NVIDIA_NVML", "nvml")
+        self.check_environment("PROTON_NVIDIA_NVOPTIX", "nvoptix")
         self.check_environment("PROTON_HIDE_APU", "hideapu")
         self.check_environment("PROTON_ENABLE_MEDIACONV", "mediaconv")
         self.check_environment("PROTON_NO_WM_DECORATION", "nowmdecoration")
@@ -1663,6 +1729,12 @@ class Session:
             self.env["PROTON_AUDIO_CONVERT"] = "1"
             self.env["PROTON_AUDIO_CONVERT_BIN"] = "1"
             self.env["PROTON_DEMUX"] = "1"
+
+        if "nvidialibs" in self.compat_config:
+            self.compat_config.add("nvcuda")
+            self.compat_config.add("nvenc")
+            self.compat_config.add("nvml")
+            self.compat_config.add("nvoptix")
 
         if "nowmdecoration" in self.compat_config:
             self.env["WINE_NO_WM_DECORATION"] = "1"
