@@ -22,6 +22,7 @@ pushd "$here"/../wine || exit 1
     patch_cmd "$here"/spritz/0002-HACK-kernelbase-Terminate-Genshin-Impact-if-ExitProc.patch
     patch_cmd "$here"/spritz/0003-HACK-winex11-make-WM-focus-window-with-WINE_USE_TAKE.patch
     patch_cmd "$here"/spritz/0004-HACK-winex11-Disable-window-opacity-for-Wuthering-Wa.patch
+    patch_cmd "$here"/spritz/0005-wine-cachyos-ntsync.patch
 popd || exit 1
 
 pushd "$here"/../vkd3d-proton || exit 1
