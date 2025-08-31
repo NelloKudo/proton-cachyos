@@ -3,22 +3,38 @@
 import io
 import json
 import os
+import shutil
 import sys
 import urllib.request
 import zipfile
+from argparse import Namespace
+from pathlib import Path
 from typing import Callable, Union
+
+
+class Config(Namespace):
+    class Path(Namespace):
+        cache_dir: Path = Path.home().joinpath('.cache', 'protonfixes')
+
+    path = Path()
+
+
+config = Config()
 
 
 class Log:
     @staticmethod
     def warn(msg):
         print('WARN: ' + msg, file=sys.stderr)
+
     @staticmethod
     def info(msg):
         print('INFO: ' + msg, file=sys.stderr)
+
     @staticmethod
     def crit(msg):
         print('ERROR: ' + msg, file=sys.stderr)
+
 
 log = Log()
 
@@ -31,12 +47,23 @@ def __get_manifest() -> dict:
     if __manifest_json is not None:
         return __manifest_json
 
-    with urllib.request.urlopen(__manifest_url) as url_fd:
-        __manifest_json = json.loads(url_fd.read())
+    cache_dir = config.path.cache_dir.joinpath('upscalers')
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    cached_manifest = cache_dir.joinpath('manifest.json')
+    try:
+        with urllib.request.urlopen(__manifest_url) as url_fd:
+            __manifest_json = json.loads(url_fd.read())
+        with cached_manifest.open('w') as manifest_fd:
+            manifest_fd.write(json.dumps(__manifest_json))
+    except Exception:
+        if cached_manifest.exists():
+            with cached_manifest.open() as manifest_fd:
+                __manifest_json = json.loads(manifest_fd.read())
+
     return __manifest_json  # pyright: ignore [reportReturnType]
 
 
-def __get_dll_download(upscaler: str, version: str = 'default') -> dict:
+def __get_dll_manifest(upscaler: str, version: str = 'default') -> dict:
     dlls = __get_manifest()[upscaler]
     for dll in reversed(dlls):
         if version in dll['version']:
@@ -52,24 +79,24 @@ __fsr4_version_file = 'fsr4_version'
 
 def __get_dlss_dlls(version: str = 'default') -> dict:
     return {
-        'drive_c/windows/system32/nvngx_dlss.dll': __get_dll_download('dlss', version),
-        'drive_c/windows/system32/nvngx_dlssd.dll': __get_dll_download('dlss_d', version),
-        'drive_c/windows/system32/nvngx_dlssg.dll': __get_dll_download('dlss_g', version),
+        'drive_c/windows/system32/nvngx_dlss.dll': __get_dll_manifest('dlss', version),
+        'drive_c/windows/system32/nvngx_dlssd.dll': __get_dll_manifest('dlss_d', version),
+        'drive_c/windows/system32/nvngx_dlssg.dll': __get_dll_manifest('dlss_g', version),
     }
 
 
 def __get_xess_dlls(version: str = 'default') -> dict:
     return {
-        'drive_c/windows/system32/libxess.dll': __get_dll_download('xess', version),
-        'drive_c/windows/system32/libxell.dll': __get_dll_download('xell', version),
-        'drive_c/windows/system32/libxess_fg.dll': __get_dll_download('xess_fg', version),
+        'drive_c/windows/system32/libxess.dll': __get_dll_manifest('xess', version),
+        'drive_c/windows/system32/libxell.dll': __get_dll_manifest('xell', version),
+        'drive_c/windows/system32/libxess_fg.dll': __get_dll_manifest('xess_fg', version),
     }
 
 
 def __get_fsr3_dlls(version: str = 'default') -> dict:
     return {
-        'drive_c/windows/system32/amd_fidelityfx_vk.dll': __get_dll_download('fsr_31_vk', version),
-        'drive_c/windows/system32/amd_fidelityfx_dx12.dll': __get_dll_download('fsr_31_dx12', version),
+        'drive_c/windows/system32/amd_fidelityfx_vk.dll': __get_dll_manifest('fsr_31_vk', version),
+        'drive_c/windows/system32/amd_fidelityfx_dx12.dll': __get_dll_manifest('fsr_31_dx12', version),
     }
 
 
@@ -113,7 +140,7 @@ def __check_upscaler_files(
     for dst in files.keys():
         if not os.path.exists(os.path.join(prefix_dir, dst)):
             return False
-        if version[dst] == files[dst]['version'] or ignore_version:
+        if ignore_version or version[dst] == files[dst]['version']:
             return True
 
     return False
@@ -139,33 +166,39 @@ def check_upscaler(
         'fsr4': (__get_fsr4_dlls, __fsr4_version_file),
     }
     get_files, version_file = upscalers[name]
+    try:
+        files = get_files(version)
+    except Exception:
+        return False
     return __check_upscaler_files(
-        prefix_dir,
-        get_files(version),
-        os.path.join(compat_dir, version_file),
-        ignore_version,
+        prefix_dir, files, os.path.join(compat_dir, version_file), ignore_version,
     )
 
 
 def __download_upscaler_files(
     prefix_dir: str, files: dict, dlfunc: Callable[[str, str], None], version_file: str
 ) -> bool:
+    cache_dir = config.path.cache_dir.joinpath('upscalers')
     version = dict()
     for dst in files.keys():
-        file = os.path.join(prefix_dir, dst)
-        temp = os.path.join(prefix_dir, dst + '.old')
+        file = Path(prefix_dir, dst)
+        temp = Path(prefix_dir, dst + '.old')
         try:
-            if os.path.exists(file):
-                os.rename(file, temp)
-            dlfunc(files[dst]['download_url'], file)
-            if os.path.exists(temp):
-                os.unlink(temp)
+            if file.exists():
+                file.rename(temp)
+            cached_file = cache_dir.joinpath(file.stem, files[dst]['version'], file.name)
+            if not cached_file.exists():
+                cached_file.parent.mkdir(parents=True, exist_ok=True)
+                dlfunc(files[dst]['download_url'], cached_file.as_posix())
+            shutil.copy(cached_file, file)
+            if temp.exists():
+                temp.unlink(missing_ok=True)
         except Exception as e:
             log.crit(str(e))
-            if os.path.exists(file):
-                os.unlink(file)
-            if os.path.exists(temp):
-                os.rename(temp, file)
+            if file.exists():
+                file.unlink(missing_ok=True)
+            if temp.exists():
+                temp.rename(file)
             return False
         version[dst] = files[dst]['version']
     with open(version_file, 'w') as version_fd:
@@ -198,25 +231,24 @@ def download_upscaler(
     name: the name of the upscaler, possible values dlss, xess, fsr3, fsr4
     version: the version of the upscaler dll to download
     """
+    if check_upscaler(name, compat_dir, prefix_dir, version):
+        return
+
     upscalers = {
         'dlss': (__get_dlss_dlls, __download_extract_zip, __dlss_version_file),
         'xess': (__get_xess_dlls, __download_extract_zip, __xess_version_file),
         'fsr3': (__get_fsr3_dlls, __download_extract_zip, __fsr3_version_file),
         'fsr4': (__get_fsr4_dlls, __download_fsr4, __fsr4_version_file),
     }
-    if check_upscaler(name, compat_dir, prefix_dir, version):
-        return
-
     get_files, download_func, version_file = upscalers[name]
-    if __download_upscaler_files(
-        prefix_dir,
-        get_files(version),
-        download_func,
-        os.path.join(compat_dir, version_file),
-    ):
-        log.info(f'Automatic {name.upper()} upgrade enabled')
-    else:
-        log.warn(f'Failed to download {name} dlls')
+    try:
+        files = get_files(version)
+        if not __download_upscaler_files(
+            prefix_dir, files, download_func, os.path.join(compat_dir, version_file),
+        ):
+            raise RuntimeError
+    except Exception:
+        log.warn(f'Failed to download {name.upper()} dlls.')
 
 
 def __setup_upscaler(
@@ -229,7 +261,10 @@ def __setup_upscaler(
 ) -> bool:
     version = env[key] if env.get(key, '0') not in {'0', '1'} else version
     download_upscaler(name, compat_dir, prefix_dir, version)
-    return check_upscaler(name, compat_dir, prefix_dir, version, ignore_version=True)
+    enabled = check_upscaler(name, compat_dir, prefix_dir, version, ignore_version=True)
+    if enabled:
+        log.info(f'Automatic {name.upper()} upgrade enabled.')
+    return enabled
 
 
 def setup_upscalers(
@@ -311,21 +346,9 @@ def setup_local_shader_cache(env: dict) -> None:
 
 
 if __name__ == '__main__':
-    from pprint import pprint
-
-    dll = __get_dll_download('dlss_g', '310.3.0.0')
-    pprint(dll)
-    dll = __get_dll_download('dlss_g', '310.3.0')
-    pprint(dll)
-    dll = __get_dll_download('dlss_g')
-    pprint(dll)
-    pprint(__get_dlss_dlls())
-    pprint(__get_xess_dlls())
-    pprint(__get_fsr3_dlls())
-
     _env = {
-        'PROTON_DLSS_UPGRADE': '310.2',
-        'PROTON_FSR4_UPGRADE': '4.0.3',
+        'PROTON_DLSS_UPGRADE': '310.1',
+        'PROTON_FSR4_UPGRADE': '4.0.0',
         'PROTON_XESS_UPGRADE': '1',
         'PROTON_FSR3_UPGRADE': '1',
     }
@@ -334,5 +357,6 @@ if __name__ == '__main__':
     _prefix_dir = os.path.join(_compat_dir, 'prefix')
     # if os.path.isdir(compat_dir):
     #     shutil.rmtree(compat_dir)
-    os.makedirs(_prefix_dir, exist_ok=True)
+    os.makedirs(os.path.join(_prefix_dir, 'drive_c', 'windows', 'system32'), exist_ok=True)
+    os.makedirs(os.path.join(_prefix_dir, 'drive_c', 'windows', 'syswow64'), exist_ok=True)
     setup_upscalers(_config, _env, _compat_dir, _prefix_dir)
