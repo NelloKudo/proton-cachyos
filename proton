@@ -36,6 +36,7 @@ from ctypes import c_size_t
 from ctypes import c_ssize_t
 
 from filelock import FileLock
+from utilities import setup_upscalers, setup_local_shader_cache
 from random import randrange
 
 #To enable debug logging, copy "user_settings.sample.py" to "user_settings.py"
@@ -1393,6 +1394,8 @@ def default_compat_config():
             ret.add("fnad3d11")
 
     #options to also be enabled for prerequisite setup steps
+    if "STEAM_COMPAT_SHADER_PATH" in os.environ:
+        ret.add("localshadercache")
     if "STEAM_COMPAT_APP_ID" in os.environ:
         appid = os.environ["STEAM_COMPAT_APP_ID"]
 
@@ -1639,7 +1642,14 @@ class Session:
         self.check_environment("PROTON_ENABLE_WAYLAND", "wayland")
         self.check_environment("PROTON_ENABLE_HDR", "hdr")
         self.check_environment("PROTON_PREFER_SDL", "sdlinput")
+        self.check_environment("PROTON_FSR3_UPGRADE", "fsr3")
+        self.check_environment("PROTON_FSR4_UPGRADE", "fsr4")
+        self.check_environment("PROTON_FSR4_RDNA3_UPGRADE", "fsr4rdna3")
+        self.check_environment("PROTON_DLSS_UPGRADE", "dlss")
+        self.check_environment("PROTON_DLSS_INDICATOR", "dlsshud")
+        self.check_environment("PROTON_XESS_UPGRADE", "xess")
         self.check_environment("PROTON_NATIVE_AGS", "nativeags")
+        self.check_environment("PROTON_LOCAL_SHADER_CACHE", "localshadercache")
 
         if "noesync" in self.compat_config:
             self.env.pop("WINEESYNC", "")
@@ -1695,6 +1705,9 @@ class Session:
                     del self.env["SDL_GAMECONTROLLER_IGNORE_DEVICES"]
                 if "hdr" in self.compat_config:
                     self.env["DXVK_HDR"] = "1"
+
+        if "localshadercache" in self.compat_config:
+            setup_local_shader_cache(self.env)
 
         if os.environ.get("SteamGameId", 0) in [
                 "661920", #Claybook
@@ -1911,6 +1924,42 @@ class Session:
 
         if update_prefix_files:
             g_compatdata.setup_prefix()
+
+        enabled_upscalers = setup_upscalers(
+            self.compat_config,
+            self.env,
+            g_compatdata.base_dir,
+            g_compatdata.prefix_dir,
+        )
+
+        if "fsr4" in enabled_upscalers:
+            self.env["FSR4_UPGRADE"] = "1"
+            if "fsr4rdna3" in self.compat_config:
+                self.env["DXIL_SPIRV_CONFIG"] = "wmma_rdna3_workaround"
+
+        if "dlss" in enabled_upscalers:
+            if "DXVK_NVAPI_DRS_SETTINGS" not in self.env:
+                self.env["DXVK_NVAPI_DRS_SETTINGS"] = str(
+                    "ngx_dlss_sr_override=on,"
+                    "ngx_dlss_rr_override=on,"
+                    "ngx_dlss_fg_override=on,"
+                    "ngx_dlss_sr_override_render_preset_selection=render_preset_latest,"
+                    "ngx_dlss_rr_override_render_preset_selection=render_preset_latest,"
+                )
+
+        if "dlsshud" in self.compat_config:
+            self.env["DXVK_NVAPI_SET_NGX_DEBUG_OPTIONS"] = "DLSSIndicator=1024,DLSSGIndicator=2,"
+        else:
+            self.env["DXVK_NVAPI_SET_NGX_DEBUG_OPTIONS"] = "DLSSIndicator=0,DLSSGIndicator=0,"
+
+        if "xess" in enabled_upscalers:
+            pass
+
+        if "fsr3" in enabled_upscalers:
+            pass
+
+        if enabled_upscalers:
+            self.env["WINE_LOADDLL_REPLACE"] = ",".join(enabled_upscalers)
 
         if "nod3d11" in self.compat_config:
             self.dlloverrides["d3d11"] = ""
