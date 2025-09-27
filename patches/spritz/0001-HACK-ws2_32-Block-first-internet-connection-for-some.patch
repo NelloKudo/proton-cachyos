@@ -1,0 +1,62 @@
+From 669a85028751dd1b824bb099cf5c54c6145cc98a Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Thu, 14 Aug 2025 14:18:26 +0200
+Subject: [PATCH] HACK: ws2_32: Block first internet connection for some games
+
+Fixes launch issues/high CPU usage in some games, can be toggled with:
+WINE_DISABLE_DISCONNECT=1 and WINE_ENABLE_DISCONNECT=1.
+---
+ dlls/ws2_32/socket.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/dlls/ws2_32/socket.c b/dlls/ws2_32/socket.c
+index 988a94b6af7..f4a7081c026 100644
+--- a/dlls/ws2_32/socket.c
++++ b/dlls/ws2_32/socket.c
+@@ -1230,6 +1230,23 @@ int WINAPI closesocket( SOCKET s )
+     return 0;
+ }
+ 
++static BOOL is_mhy(void)
++{
++    static volatile char cache = -1;
++    BOOL ret = cache;
++    if (ret == -1)
++    {
++        const WCHAR *p, *name = NtCurrentTeb()->Peb->ProcessParameters->ImagePathName.Buffer;
++        if ((p = wcsrchr(name, '/')))
++            name = p + 1;
++        if ((p = wcsrchr(name, '\\')))
++            name = p + 1;
++        ret = (!wcsicmp(name, L"StarRail.exe") ||
++               !wcsicmp(name, L"ZenlessZoneZero.exe"));
++        cache = ret;
++    }
++    return ret;
++}
+ 
+ /***********************************************************************
+  *      connect   (ws2_32.4)
+@@ -1240,6 +1257,19 @@ int WINAPI connect( SOCKET s, const struct sockaddr *addr, int len )
+     IO_STATUS_BLOCK io;
+     HANDLE sync_event;
+     NTSTATUS status;
++    static int count = 0;
++    const char* env_disable = getenv("WINE_DISABLE_DISCONNECT");
++    const char* env_enable = getenv("WINE_ENABLE_DISCONNECT");
++
++    // HACK: Block first connection for mhy games
++    if ((!count && is_mhy() && !(env_disable && atoi(env_disable) == 1)) || 
++        (env_enable && atoi(env_enable) == 1))
++    {
++        FIXME("Toggle detected, disabling first connection..\n");
++        count = 1;
++        WSASetLastError(WSAECONNREFUSED);
++        return SOCKET_ERROR;
++    }
+ 
+     TRACE( "socket %#Ix, addr %s, len %d\n", s, debugstr_sockaddr(addr), len );
+ 
+-- 
+2.51.0
+

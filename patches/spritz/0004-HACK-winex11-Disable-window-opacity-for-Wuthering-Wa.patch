@@ -1,0 +1,41 @@
+From b1a45dac5aee427622ca2b78953047ff9ece8ad1 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Mon, 21 Jul 2025 19:12:54 +0200
+Subject: [PATCH] HACK: winex11: Disable window opacity for Wuthering Waves
+
+Wuthering Waves' KRWebView.exe sets opacity to the window it creates depending on the Windows version reported to the game's executable
+rather than the one assigned ot it, completely ignoring the Wine override to Windows 7 which would fix opacity issues.
+Since setting the game to Windows 7 would break DX12, easiest fix is to not allow it in the first place.
+---
+ dlls/winex11.drv/window.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/winex11.drv/window.c b/dlls/winex11.drv/window.c
+index b9055791a60..9e592673891 100644
+--- a/dlls/winex11.drv/window.c
++++ b/dlls/winex11.drv/window.c
+@@ -597,7 +597,20 @@ static void sync_window_opacity( Display *display, Window win, BYTE alpha, DWORD
+ {
+     unsigned long opacity = 0xffffffff;
+ 
+-    if (flags & LWA_ALPHA) opacity = (0xffffffff / 0xff) * alpha;
++    /* HACK: Wuthering Waves' KRWebView sets opacity to the window it creates */
++    /* depending on the Windows version reported to the game's executable, ignoring the Wine override. */
++    /* Since setting the game to Win7 would break DX12, easiest fix is to reset opacity to fully opaque instead. */
++    static int cached = -1;
++    if (cached == -1)
++    {
++        char const *sgi = getenv( "SteamGameId" );
++        cached = (sgi && !strcmp(sgi, "3513350")) ? 1 : 0;
++    }
++
++    if (cached)
++        opacity = 0xffffffff;
++    else if (flags & LWA_ALPHA) 
++        opacity = (0xffffffff / 0xff) * alpha;
+ 
+     if (opacity == 0xffffffff)
+         XDeleteProperty( display, win, x11drv_atom(_NET_WM_WINDOW_OPACITY) );
+-- 
+2.50.1
+
