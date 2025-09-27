@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
+#include <stdlib.h>
 
 #include <windef.h>
 #include <winbase.h>
@@ -406,7 +407,7 @@ NTSTATUS steamclient_call( unsigned int code, void *args, const char *name );
 #define STEAMCLIENT_CALL( code, args )                                     \
     ({                                                                     \
         NTSTATUS status = steamclient_call( unix_ ## code, args, #code );  \
-        assert( !status );                                                 \
+        if (!getenv("WINE_ENABLE_STEAM_STUB")) assert( !status );          \
         status;                                                            \
     })
 
