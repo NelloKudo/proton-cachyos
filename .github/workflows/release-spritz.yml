@@ -5,7 +5,7 @@ on:
     types: [ published ]
   push:
     tags:
-      - 'cachyos-*-*-slr'
+      - 'spritz*'
 
 concurrency:
   group: ${{ github.ref_name }}
@@ -20,15 +20,9 @@ jobs:
           - name: proton-${{ github.ref_name }}-x86_64
             cpu_arch: nocona
             cpu_tune: core-avx2
-          - name: proton-${{ github.ref_name }}-x86_64_v2
-            cpu_arch: x86-64-v2
-            cpu_tune: core-avx2
           - name: proton-${{ github.ref_name }}-x86_64_v3
             cpu_arch: x86-64-v3
             cpu_tune: core-avx2
-          - name: proton-${{ github.ref_name }}-x86_64_v4
-            cpu_arch: x86-64-v4
-            cpu_tune: skylake-avx512
     uses: ./.github/workflows/_job_build.yml
     with:
       name: ${{ matrix.name }}
@@ -48,8 +42,7 @@ jobs:
       id: title
       shell: bash
       run: |
-        git fetch origin +refs/tags/*:refs/tags/*
-        python -c "_,mj,mn,_='${{ github.ref_name }}'.split('-');print('title='+'-'.join([mj,mn]))" >> "$GITHUB_OUTPUT"
+        echo "title=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
     - name: Create
       id: create
       shell: bash
@@ -58,7 +51,7 @@ jobs:
         release create
         ${{ github.ref_name }}
         --latest
-        --title "Version ${{ steps.title.outputs.title }}"
+        --title "${{ steps.title.outputs.title }}"
         --notes-from-tag
         --verify-tag
       env:
@@ -71,9 +64,7 @@ jobs:
       matrix:
         include:
           - name: proton-${{ github.ref_name }}-x86_64
-          - name: proton-${{ github.ref_name }}-x86_64_v2
           - name: proton-${{ github.ref_name }}-x86_64_v3
-          - name: proton-${{ github.ref_name }}-x86_64_v4
     uses: ./.github/workflows/_job_upload.yml
     with:
       version: ${{ github.ref_name }}
