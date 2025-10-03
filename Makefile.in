@@ -95,6 +95,10 @@ windows_ARCHS = $(subst -windows,,$(filter %-windows,$(ARCHS)))
 i386_SOURCE_DATE_EPOCH := $(BASE_SOURCE_DATE_EPOCH)
 x86_64_SOURCE_DATE_EPOCH := $(shell expr $(BASE_SOURCE_DATE_EPOCH) - 10)
 
+.PHONE: clean
+clean: $(OBJ)
+	rm -rf $(OBJ)/compile_commands $(OBJ)/dist $(OBJ)/wine $(OBJ)/obj-* $(OBJ)/src-* $(OBJ)/dst-* $(OBJ)/.*
+
 # all, all-dist and dist are basically synonyms
 .PHONY: all all-dist dist
 all: all-dist | $(DST_DIR)
