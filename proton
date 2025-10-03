@@ -1233,9 +1233,7 @@ class CompatData:
                         os.unlink(nvencodeapi32_dll)
 
                 if use_nvml and use_nvapi:
-                    g_session.env["WINEDLLPATH"] = ":".join(
-                        [g_proton.lib_dir + "wine/nvidia-libs/nvml/wine", g_proton.lib_dir + "vkd3d", g_proton.lib_dir + "wine"]
-                    )
+                    prepend_to_env_str(g_session.env, "WINEDLLPATH", g_proton.lib_dir + "wine/nvidia-libs/nvml/wine", ":")
                 else:
                     nvml64_dll = self.prefix_dir + "drive_c/windows/system32/nvml.dll"
                     if file_exists(nvml64_dll, follow_symlinks=False):
