@@ -19,4 +19,6 @@ pushd "$here"/../wine || exit 1
     patch_cmd "$here"/spritz/0004-HACK-winex11-Disable-window-opacity-for-Wuthering-Wa.patch
     patch_cmd "$here"/spritz/0005-ntdll-set-WINE_ENABLE_STEAM_STUB-for-GI.patch
     patch_cmd "$here"/spritz/0006-backports-ntdll-Also-trap-syscalls-in-the-top-down-reserved-ar.patch
+    patch_cmd "$here"/spritz/0007-ntdll-Implement-NtGetNextProcess.patch
+    patch_cmd "$here"/spritz/0008-ntdll-Add-some-missing-Zw-exports.patch
 popd || exit 1
