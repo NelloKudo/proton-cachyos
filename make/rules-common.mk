@@ -182,6 +182,12 @@ $(2)_$(3)_ENV += \
 
 endif
 
+$(1)-$(3)-distclean::
+	rm -rf $$($(2)_$(3)_OBJ)
+	rm -rf $$($(2)_$(3)_DST)
+	rm  -f $$(OBJ)/.$(1)-$(3)-{configure,build,post-build,dist}
+
+distclean: $(1)-$(3)-distclean
 endef
 
 ifneq ($(UNSTRIPPED_BUILD),)

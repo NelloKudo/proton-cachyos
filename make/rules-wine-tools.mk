@@ -19,6 +19,10 @@ $$(OBJ)/.$(1)-$(3)-tools:
 
 $$(OBJ)/.$(1)-$(3)-build: $$(OBJ)/.$(1)-$(3)-tools
 
+$(1)-$(3)-tools-distclean::
+	rm -rf $$(OBJ)/.$(1)-$(3)-tools
+
+distclean: $(1)-$(3)-tools-distclean
 endif
 endef
 
