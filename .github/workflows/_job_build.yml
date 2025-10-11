@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+    - name: Check disk usage
+      run: |
+        df -h
+
     - name: Debloat GitHub CI
       uses: endersonmenezes/free-disk-space@v2
       with:
@@ -31,6 +35,10 @@ jobs:
         remove_packages_one_command: true
         remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/local/aws-sam-cli /usr/share/gradle"
         testing: false
+      
+    - name: Check disk usage
+      run: |
+        df -h
 
     - name: Prepare host
       run: sudo apt update && sudo apt-get install -y ccache fontforge-nox
