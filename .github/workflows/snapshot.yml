@@ -1,0 +1,118 @@
+name: Snapshot Build (arm64)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-arm64:
+    name: Build arm64
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Debloat GitHub runner
+        uses: endersonmenezes/free-disk-space@v3
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+          remove_tool_cache: true
+          remove_swap: true
+          remove_packages: >-
+            azure-cli
+            google-cloud-cli
+            microsoft-edge-stable
+            google-chrome-stable
+            firefox
+            postgresql*
+            temurin-*
+            *llvm*
+            mysql*
+            dotnet-sdk-*
+          remove_packages_one_command: false
+          remove_folders: >-
+            /usr/share/swift
+            /usr/share/miniconda
+            /usr/share/az*
+            /usr/local/lib/node_modules
+            /usr/local/share/chromium
+            /usr/local/share/powershell
+            /usr/local/julia
+            /usr/local/aws-cli
+            /usr/local/aws-sam-cli
+            /usr/share/gradle
+          testing: false
+
+      - name: Prepare host
+        run: sudo apt-get update && sudo apt-get install -y ccache fontforge-nox
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          submodules: false
+
+      - name: Init submodules
+        run: |
+          git submodule update --init --filter=tree:0 --recursive
+          mkdir ./build
+
+      - name: Get version
+        id: vars
+        run: |
+          tag=$(grep -m1 'CURRENT_PREFIX_VERSION=' proton | cut -d'"' -f2)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "sha_short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Configure
+        working-directory: ./build
+        env:
+          RUSTFLAGS: -Copt-level=3
+          USE_LTO: 0
+        run: |
+          ../configure.sh \
+            --build-name=dwproton-${{ steps.vars.outputs.tag }}-${{ steps.vars.outputs.sha_short }}-arm64 \
+            --container-engine=docker \
+            --enable-ccache \
+            --without-tts \
+            --without-nvidia-libs \
+            --target-arch=arm64
+
+      - name: Cache identifier
+        working-directory: ./build
+        id: ccache-id
+        run: |
+          image=$(make get-steamrt-image | tail -1)
+          checksum=$(echo "$image arm64" | sha1sum | cut -d' ' -f1)
+          echo "checksum=$checksum" >> $GITHUB_OUTPUT
+
+      - name: Restore cache
+        id: ccache-restore
+        uses: actions/cache/restore@v5
+        with:
+          path: ~/.ccache
+          key: ccache-proton-arm64-${{ steps.ccache-id.outputs.checksum }}-${{ github.run_id }}
+          restore-keys: |
+            ccache-proton-arm64-${{ steps.ccache-id.outputs.checksum }}
+            ccache-proton-arm64-
+
+      - name: Build
+        working-directory: ./build
+        run: |
+          make -j$(nproc) redist
+
+      - name: Save cache
+        id: ccache-save
+        if: always()
+        uses: actions/cache/save@v5
+        with:
+          path: ~/.ccache
+          key: ${{ steps.ccache-restore.outputs.cache-primary-key }}
+
+      - name: Upload snapshot artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: dwproton-${{ steps.vars.outputs.tag }}-${{ steps.vars.outputs.sha_short }}-arm64
+          path: |
+            ./build/dwproton-${{ steps.vars.outputs.tag }}-${{ steps.vars.outputs.sha_short }}-arm64.tar.xz
+            ./build/dwproton-${{ steps.vars.outputs.tag }}-${{ steps.vars.outputs.sha_short }}-arm64.sha512sum
+          retention-days: 14
