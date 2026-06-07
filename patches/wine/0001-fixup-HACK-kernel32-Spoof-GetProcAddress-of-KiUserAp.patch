@@ -1,0 +1,32 @@
+From 9135f05d701e9a0143876fe20fd93f9c3583a16f Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sun, 7 Jun 2026 16:34:44 +0200
+Subject: [PATCH] fixup! HACK: kernel32: Spoof GetProcAddress of
+ KiUserApcDispatcher and KiUserCallbackDispatcher.
+
+---
+ dlls/kernel32/module.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/dlls/kernel32/module.c b/dlls/kernel32/module.c
+index f64ac491372..1c41d6fbd0b 100644
+--- a/dlls/kernel32/module.c
++++ b/dlls/kernel32/module.c
+@@ -295,10 +295,10 @@ static BOOL needs_int3_hack(void)
+ 
+ static void __attribute__((naked)) int3_stub( void )
+ {
+-    asm("int3\t\n"
+-        "int3\t\n"
+-        "int3\t\n"
+-        "int3\t\n");
++    asm(".byte 0xcc\n\t"
++        ".byte 0xcc\n\t"
++        ".byte 0xcc\n\t"
++        ".byte 0xcc\n\t");
+ }
+ #endif
+ 
+-- 
+2.54.0
+
