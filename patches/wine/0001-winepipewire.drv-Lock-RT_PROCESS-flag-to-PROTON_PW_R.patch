@@ -1,0 +1,45 @@
+From 3b2599df786889b1eb7f9f39e256918b551d6684 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sun, 19 Jul 2026 15:32:39 +0200
+Subject: [PATCH] winepipewire.drv: Lock RT_PROCESS flag to PROTON_PW_RT=1.
+
+---
+ dlls/winepipewire.drv/pipewire.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/winepipewire.drv/pipewire.c b/dlls/winepipewire.drv/pipewire.c
+index 4460bec4de3..483bd158abb 100644
+--- a/dlls/winepipewire.drv/pipewire.c
++++ b/dlls/winepipewire.drv/pipewire.c
+@@ -274,6 +274,19 @@ static void silence_buffer(enum spa_audio_format format, BYTE *buffer, UINT32 by
+     memset(buffer, format == SPA_AUDIO_FORMAT_U8 ? 0x80 : 0, bytes);
+ }
+ 
++static BOOL rt_process_enabled(void)
++{
++    static int rt = -1;
++    if (rt < 0)
++    {
++        const char *e = getenv("PROTON_PW_RT");
++        rt = e && atoi(e) ? 1 : 0;
++        if (rt)
++            WARN("RT process enabled by PROTON_PW_RT.\n");
++    }
++    return rt;
++}
++
+ /* copy n bytes out of a byte ring starting at offs, wrapping at ring_size */
+ static void copy_from_ring(BYTE *dst, const BYTE *ring, SIZE_T ring_size, SIZE_T offs, SIZE_T n)
+ {
+@@ -1766,7 +1779,7 @@ static HRESULT pipewire_stream_connect(struct pipewire_stream *stream, const cha
+ 
+     flags = PW_STREAM_FLAG_AUTOCONNECT | PW_STREAM_FLAG_MAP_BUFFERS | PW_STREAM_FLAG_INACTIVE;
+ 
+-    if (stream->dataflow == eRender)
++    if (stream->dataflow == eRender && rt_process_enabled())
+         flags |= PW_STREAM_FLAG_RT_PROCESS;
+ 
+     if (pw_stream_connect(stream->pw,
+-- 
+2.55.0
+
