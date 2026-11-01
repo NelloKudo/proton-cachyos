@@ -1,0 +1,45 @@
+From 3aea9ebf662c067ee104e2af2ede505bbf7a8a77 Mon Sep 17 00:00:00 2001
+From: NelloKudo <marshnelloosu@gmail.com>
+Date: Sun, 1 Nov 2026 14:52:11 +0100
+Subject: [PATCH] setupapi: Add stub for SetupDiGetDeviceInterfaceAlias().
+
+---
+ dlls/setupapi/setupapi.spec |  2 +-
+ dlls/setupapi/stubs.c       | 11 +++++++++++
+ 2 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/dlls/setupapi/setupapi.spec b/dlls/setupapi/setupapi.spec
+index bb0bdb3497d..883569f0a11 100644
+--- a/dlls/setupapi/setupapi.spec
++++ b/dlls/setupapi/setupapi.spec
+@@ -354,7 +354,7 @@
+ @ stdcall SetupDiGetDeviceInstallParamsW(ptr ptr ptr)
+ @ stdcall SetupDiGetDeviceInstanceIdA(ptr ptr ptr long ptr)
+ @ stdcall SetupDiGetDeviceInstanceIdW(ptr ptr ptr long ptr)
+-@ stub SetupDiGetDeviceInterfaceAlias
++@ stdcall SetupDiGetDeviceInterfaceAlias(long ptr ptr ptr)
+ @ stdcall SetupDiGetDeviceInterfaceDetailA(long ptr ptr long ptr ptr)
+ @ stdcall SetupDiGetDeviceInterfaceDetailW(long ptr ptr long ptr ptr)
+ @ stdcall SetupDiGetDeviceInterfacePropertyKeys(ptr ptr ptr long ptr long)
+diff --git a/dlls/setupapi/stubs.c b/dlls/setupapi/stubs.c
+index 3b0f4ac8295..c6ea1dec434 100644
+--- a/dlls/setupapi/stubs.c
++++ b/dlls/setupapi/stubs.c
+@@ -266,3 +266,14 @@ BOOL WINAPI SetupDiGetClassRegistryPropertyW(const GUID *class, DWORD prop, DWOR
+     SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
+     return FALSE;
+ }
++
++/***********************************************************************
++ *              SetupDiGetDeviceInterfaceAlias  (SETUPAPI.@)
++ */
++BOOL WINAPI SetupDiGetDeviceInterfaceAlias(HDEVINFO devinfo, PSP_DEVICE_INTERFACE_DATA iface_data,
++    const GUID *alias_class, PSP_DEVICE_INTERFACE_DATA alias_data)
++{
++    FIXME(": stub %p, %p, %s, %p\n", devinfo, iface_data, debugstr_guid(alias_class), alias_data);
++    SetLastError(ERROR_CALL_NOT_IMPLEMENTED);
++    return FALSE;
++}
+-- 
+2.56.0
+
